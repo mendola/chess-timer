@@ -32,6 +32,7 @@ const uint8_t g_led_seg_bitmask[8] = {
 };
 
 typedef enum digit_ {
+  NONE = 0b00000000,
   ZERO = 0b00111111,
   ONE =  0b00000110,
   TWO =  0b01011011,
@@ -56,32 +57,44 @@ float GetBatteryVoltage(void) {
   return vbat; 
 }
 
+void ClearAll() {
+  for (uint8_t muxpin_id = 0; muxpin_id < 4; ++muxpin_id){
+    digitalWrite(g_digit_mux[muxpin_id], HIGH);
+  }
+  // Set the individual LEDs
+  for (uint8_t i=0; i<7; ++i) {
+    digitalWrite(g_led_seg_bitmask[i], LOW); // Let current flow into pin (to drive current thru LED)
+  }
+
+  // Set period/dot LED
+  digitalWrite(LED_SEG_DP, LOW);
+}
 
 void ShowDigit(const uint8_t digit_id, const digit_t digit, const bool point) {
   uint8_t muxpin = g_digit_mux[digit_id];
-
+  ClearAll();
   for (uint8_t muxpin_id = 0; muxpin_id < 4; ++muxpin_id){
     // Set the digit_enable pins
     if (digit_id == muxpin_id) {
-      digitalWrite(muxpin_id, HIGH);
+      digitalWrite(g_digit_mux[muxpin_id], LOW);
     } else {
-      digitalWrite(muxpin_id, LOW);   
+      digitalWrite(g_digit_mux[muxpin_id], HIGH);   
     }
   }
   // Set the individual LEDs
   for (uint8_t i=0; i<7; ++i) {
     if (digit & (1 << i)) {
-      digitalWrite(g_led_seg_bitmask[i], LOW); // Let current flow into pin
+      digitalWrite(g_led_seg_bitmask[i], HIGH); // Let current flow into pin (to drive current thru LED)
     } else {
-      digitalWrite(g_led_seg_bitmask[i], HIGH); // Don't
+      digitalWrite(g_led_seg_bitmask[i], LOW); // Don't
     }
   }
 
   // Set period/dot LED
   if (point) {
-    digitalWrite(LED_SEG_DP, LOW);
-  } else {
     digitalWrite(LED_SEG_DP, HIGH);
+  } else {
+    digitalWrite(LED_SEG_DP, LOW);
   }
 }
 
@@ -104,7 +117,10 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  digit_t test_digits[4] = {EIGHT, ZERO, ZERO, EIGHT};
   for (uint8_t digit_id=0; digit_id<4; ++digit_id) {
-    ShowDigit(digit_id, SIX, false);
+    //ClearAll();
+    ShowDigit(digit_id, test_digits[digit_id], false);
+    delay(1);
   }
 }
